@@ -1,10 +1,10 @@
 {
   "name": "messagely",
   "version": "1.1.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest -i"
+    "test": "jest -i",
+    "start": "node server.js"
   },
   "author": "",
   "license": "ISC",
@@ -18,5 +18,7 @@
     "jsonwebtoken": "*",
     "pg": "*",
     "supertest": "*"
-  }
+  },
+  "keywords": [],
+  "description": ""
 }
