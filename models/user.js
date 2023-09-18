@@ -50,12 +50,25 @@ return result.rows[0];
   /** Update last_login_at for user */
 
   static async updateLoginTimestamp(username) {
+    const result = await db.query(
+      `UPDATE users
+       SET last_login_at = current_timestamp
+         WHERE username = $1
+         RETURNING id, read_at`,
+    [username]);
+    const user = result.rows[0];
+
+    if (!user) throw new NotFoundError(`No such user: ${username}`);
   }
 
   /** All: basic info on all users:
    * [{username, first_name, last_name}, ...] */
 
   static async all() {
+    const result = await db.query(
+      `SELECT username, first_name, last_name FROM users`);
+    const users = result.rows;
+    return users;
   }
 
   /** Get: get user by username
@@ -68,6 +81,15 @@ return result.rows[0];
    *          last_login_at } */
 
   static async get(username) {
+    const result = await db.query(
+      `SELECT username, first_name, last_name, phone, join_at, last_login_at
+          FROM users
+          WHERE username = $1`,
+          [username]);
+    const user = result.rows[0];
+
+    if (!user) throw new NotFoundError(`No such user: ${username}`);
+    return user;
   }
 
   /** Return messages from this user.
@@ -79,6 +101,20 @@ return result.rows[0];
    */
 
   static async messagesFrom(username) {
+
+    const result = await db.query(
+      `SELECT m.id, m.to_username AS m.to_user, m.body, m.sent_at, m.read_at
+         FROM messages AS m
+                JOIN users AS u ON m.from_username = u.username
+         WHERE u.username = $1`,
+    [username]);
+
+    const messagesQuery = result.rows;
+
+    const messagesPromise = messagesQuery.forEach(message => message.to_user = User.get(message.to_user));
+
+    const messages = await Promise.allSettled(messagesPromise);
+    return messages;
   }
 
   /** Return messages to this user.
