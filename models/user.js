@@ -33,7 +33,18 @@ return result.rows[0];
   /** Authenticate: is username/password valid? Returns boolean. */
 
   static async authenticate(username, password) {
+    const results = await db.query(
+      `SELECT password
+      FROM USERS
+      WHERE username = $1`,
+      [username]
+      )
 
+    const dbPassword = results.rows[0].password;
+
+    if (!dbPassword) throw new NotFoundError('Username or password incorrect');
+
+    return await bcrypt.compare(password, dbPassword);
   }
 
   /** Update last_login_at for user */
