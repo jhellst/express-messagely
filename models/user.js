@@ -43,9 +43,6 @@ class User {
     const hashedPassword = results.rows[0].password;
 
     return hashedPassword && await bcrypt.compare(password, hashedPassword);
-
-    // TODO: Additional error checking for password validation (2 different error messages possible)
-
   }
 
   /** Update last_login_at for user */

@@ -3,7 +3,7 @@
 const Router = require("express").Router;
 const { SECRET_KEY } = require("../config");
 const User = require("../models/user");
-const {UnauthorizedError, BadRequestError } = require("../expressError");
+const { UnauthorizedError, BadRequestError } = require("../expressError");
 const jwt = require("jsonwebtoken");
 
 const router = new Router();
@@ -17,7 +17,7 @@ router.post("/login", async function (req, res, next) {
 
   // Authenticate here.
   if (await User.authenticate(username, password)) {
-    const payload = {username};
+    const payload = { username };
     const token = jwt.sign(payload, SECRET_KEY);
     return res.json(token);
   } else {
@@ -31,12 +31,21 @@ router.post("/login", async function (req, res, next) {
  *
  * {username, password, first_name, last_name, phone} => {token}.
  */
- router.post("/register", async function (req, res, next) {
+router.post("/register", async function (req, res, next) {
 
   if (req.body === undefined) throw new BadRequestError("No username or password provided for registration.");
 
-  if (!req.body.username || !req.body.password || !req.body.first_name || !req.body.last_name || !req.body.phone) {
-    throw new BadRequestError("One or more sign-up requirements not provided in request (username, password, first_name, last_name, phone).");
+  if (
+    !req.body.username ||
+    !req.body.password ||
+    !req.body.first_name ||
+    !req.body.last_name ||
+    !req.body.phone
+  ) {
+    throw new BadRequestError(
+      `One or more sign-up requirements not provided in request
+          (username, password, first_name, last_name, phone).`
+    );
   }
 
   const { username, password, first_name, last_name, phone } = req.body;
@@ -46,11 +55,11 @@ router.post("/login", async function (req, res, next) {
   try {
     const user = await User.register({ username, password, first_name, last_name, phone });
     if (await User.authenticate(username, password)) {
-      const payload = {username};
+      const payload = { username };
       const token = jwt.sign(payload, SECRET_KEY);
       return res.json(token);
     }
-  } catch(err) {
+  } catch (err) {
     throw new BadRequestError("Error occured during user registration.");
   }
 });
