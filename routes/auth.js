@@ -4,6 +4,7 @@ const Router = require("express").Router;
 const { SECRET_KEY } = require("../config");
 const User = require("../models/user");
 const {UnauthorizedError, BadRequestError } = require("../expressError");
+const jwt = require("jsonwebtoken");
 
 const router = new Router();
 
@@ -17,8 +18,9 @@ router.post("/login", async function (req, res, next) {
   // Authenticate here.
   if (await User.authenticate(username, password)) {
     const payload = {username};
-    token = jwt.sign(payload, SECRET_KEY);
-    return token;
+    const token = jwt.sign(payload, SECRET_KEY);
+    res.locals.user = token;
+    return res.json(token);
   } else {
     throw new UnauthorizedError("User was not authenticated. Either username or password was incorrect.");
   }
@@ -42,24 +44,17 @@ router.post("/login", async function (req, res, next) {
 
 
   // Register here using user model.
-
   try {
-    res.locals.user = await User.register({ username, password, first_name, last_name, phone });
-    return res.json(token);
+    const user = await User.register({ username, password, first_name, last_name, phone });
+    if (await User.authenticate(username, password)) {
+      const payload = {username};
+      const token = jwt.sign(payload, SECRET_KEY);
+      res.locals.user = token;
+      return res.json(token);
+    }
   } catch(err) {
     throw new BadRequestError("Error occured during user registration.");
   }
-
-
-
-
-  // if (await User.authenticate(username, password)) {
-  //   const payload = {username};
-  //   let token = jwt.sign(payload, SECRET_KEY);
-  //   return token;
-  // } else {
-  //   throw new UnauthorizedError("User was not authenticated. Either username or password was incorrect.");
-  // }
 });
 
 
