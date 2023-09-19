@@ -21,14 +21,13 @@ class User {
                              first_name,
                              last_name,
                              phone,
-                             join_at,
-                             last_login_at)
+                             join_at)
          VALUES
-           ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
+           ($1, $2, $3, $4, $5, current_timestamp)
          RETURNING username, password, first_name, last_name, phone`,
     [username, hashedPassword, first_name, last_name, phone]);
 
-return result.rows[0];
+    return result.rows[0];
   }
 
   /** Authenticate: is username/password valid? Returns boolean. */
@@ -41,11 +40,12 @@ return result.rows[0];
       [username]
       )
 
-    const dbPassword = results.rows[0].password;
+    const hashedPassword = results.rows[0].password;
 
-    if (!dbPassword) throw new NotFoundError('Username or password incorrect');
+    return hashedPassword && await bcrypt.compare(password, hashedPassword);
 
-    return await bcrypt.compare(password, dbPassword);
+    // TODO: Additional error checking for password validation (2 different error messages possible)
+
   }
 
   /** Update last_login_at for user */
@@ -67,9 +67,8 @@ return result.rows[0];
 
   static async all() {
     const result = await db.query(
-      `SELECT username, first_name, last_name FROM users`);
-    const users = result.rows;
-    return users;
+      `SELECT username, first_name, last_name FROM users ORDER BY username`);
+    return result.rows;
   }
 
   /** Get: get user by username
@@ -102,7 +101,7 @@ return result.rows[0];
    */
 
   static async messagesFrom(username) {
-    //chanmge this query to get user info
+
     const result = await db.query(
       `SELECT m.id, m.to_username AS to_user, m.body, m.sent_at, m.read_at,
               t.username, t.first_name, t.last_name, t.phone
@@ -113,27 +112,20 @@ return result.rows[0];
     [username]);
 
     //map over our results to get the object we want
-    // messages = messages.map(message => {
-
-    //   to_user: {
-    //     ...
-    //   }
-    // })
     let messages = result.rows;
-    messages = messages.map(message => {
-      return {
-        id: message.id,
-        to_user: {
-        message.username,
-        message.first_name,
-        message.last_name,
-        message.phone
-        },
-        body: message.body,
-        sent_at: message.sent_at,
-        read_at: message.read_at
-      }
-    });
+    messages = messages.map(message => ({
+      id: message.id,
+      to_user: {
+        username:message.username,
+        first_name: message.first_name,
+        last_name: message.last_name,
+        phone: message.phone
+      },
+      body: message.body,
+      sent_at: message.sent_at,
+      read_at: message.read_at
+      })
+    );
 
     return messages;
   }
@@ -147,18 +139,31 @@ return result.rows[0];
    */
 
   static async messagesTo(username) {
+
     const result = await db.query(
-      `SELECT m.id, m.from_username AS m.from_user, m.body, m.sent_at, m.read_at
+      `SELECT m.id, m.from_username AS from_user, m.body, m.sent_at, m.read_at,
+              t.username, t.first_name, t.last_name, t.phone
          FROM messages AS m
-                JOIN users AS u ON m.to_username = u.username
-         WHERE u.username = $1`,
-        [username]
+                JOIN users AS f ON m.to_username = f.username
+                JOIN users AS t on m.from_username = t.username
+         WHERE m.to_username = $1`,
+    [username]);
+
+    let messages = result.rows;
+    messages = messages.map(message => ({
+      id: message.id,
+      from_user: {
+        username:message.username,
+        first_name: message.first_name,
+        last_name: message.last_name,
+        phone: message.phone
+      },
+      body: message.body,
+      sent_at: message.sent_at,
+      read_at: message.read_at
+      })
     );
-    const messagesQuery = results.rows;
 
-    messagesQuery.forEach(message => message.from_user = User.get(message.from_user));
-
-    const messages = await Promise.allSettled(messagesQuery);
     return messages;
   }
 }
