@@ -5,7 +5,7 @@
 
 const express = require("express");
 const cors = require("cors");
-const { authenticateJWT } = require("./middleware/auth");
+const { authenticateJWT, ensureLoggedIn } = require("./middleware/auth");
 
 const { NotFoundError } = require("./expressError");
 const app = new express();
@@ -19,6 +19,7 @@ app.use(cors());
 
 // get auth token for all routes
 app.use(authenticateJWT);
+app.use(ensureLoggedIn);
 
 /** routes */
 

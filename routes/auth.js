@@ -19,7 +19,6 @@ router.post("/login", async function (req, res, next) {
   if (await User.authenticate(username, password)) {
     const payload = {username};
     const token = jwt.sign(payload, SECRET_KEY);
-    res.locals.user = token;
     return res.json(token);
   } else {
     throw new UnauthorizedError("User was not authenticated. Either username or password was incorrect.");
@@ -49,7 +48,6 @@ router.post("/login", async function (req, res, next) {
     if (await User.authenticate(username, password)) {
       const payload = {username};
       const token = jwt.sign(payload, SECRET_KEY);
-      res.locals.user = token;
       return res.json(token);
     }
   } catch(err) {
